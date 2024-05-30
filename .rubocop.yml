@@ -1,0 +1,25 @@
+require:
+  - rubocop-minitest
+  - rubocop-rake
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+
+Layout/SpaceInsideHashLiteralBraces:
+  EnforcedStyle: no_space
+
+Lint/AmbiguousOperatorPrecedence:
+  Enabled: false
+
+Metrics/ParameterLists:
+  Max: 9
+
+Style/Alias:
+  EnforcedStyle: prefer_alias
+
+Style/Documentation:
+  Enabled: false
+
+Style/NumberedParametersLimit:
+  Max: 9

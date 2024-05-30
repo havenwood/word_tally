@@ -1,0 +1,89 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require 'word_tally'
+require 'word_tally/args'
+
+options = ARGV.options do |cli|
+  cli.banner = <<~BANNER
+    Output a tally of the number of times unique words appear in source input.
+
+    \u001b[4mUsage:\u001b[0m word-tally [OPTIONS] [INPUT]
+
+    \u001b[4mArguments:\u001b[0m
+      [INPUT]  File path to use as input rather than stdin ("-") [default: -]
+
+    \u001b[4mOptions:\u001b[0m
+  BANNER
+  cli.version = WordTally::VERSION
+  cli.accept(Symbol, &:to_sym)
+
+  cli.on '-s', '--sort=ORDER', 'Sort order [default: desc] [possible values: desc, asc, unsorted]', Symbol
+  cli.on '-c', '--case=FORMAT', 'Case normalization [default: lower] [possible values: original, upper, lower]', Symbol
+  cli.on '-m', '--min_chars=COUNT', 'Exclude words that contain fewer than min chars [default: 1]', Integer
+  cli.on '-M', '--min_count=COUNT', 'Exclude words that appear fewer than min times [default: 1]', Integer
+  cli.on '-D', '--delimiter=VALUE', 'Delimiter between keys and values [default: " "]', String
+  cli.on '-o', '--output=PATH', 'Write output to file rather than stdout', String
+  cli.on '-v', '--verbose', 'Print verbose details'
+  cli.on '-d', '--debug', 'Print debugging information'
+  cli.on '-h', '--help', 'Print help' do
+    puts cli
+    exit
+  end
+  cli.on '-V', '--version', 'Print version' do
+    puts cli.ver
+  end
+end
+
+args = WordTally::Args.new
+options.parse!(into: args)
+
+input = if ARGV.empty?
+          $stdin
+        else
+          File.open(ARGV.shift)
+        end
+
+word_tally = WordTally.new(
+  input,
+  format: args.case,
+  order: args.sort,
+  min_chars: args.min_chars,
+  min_count: args.min_count
+)
+
+delimiter = args.delimiter
+
+if args.verbose
+  warn "total-words#{delimiter}#{word_tally.count}"
+  warn "uniq-words#{delimiter}#{word_tally.uniq_count}"
+end
+
+if args.debug
+  warn "delimiter#{delimiter}#{delimiter}"
+  warn "case#{delimiter}#{args.case}"
+  warn "order#{delimiter}#{args.sort}"
+  warn "min-chars#{delimiter}#{args.min_chars}"
+  warn "min-count#{delimiter}#{args.min_count}"
+  warn "verbose#{delimiter}#{args.verbose}"
+  warn "debug#{delimiter}#{args.debug}"
+end
+
+tally = word_tally.tally
+
+warn("\n") if (args.verbose || args.debug) && tally.any?
+
+output = args.output
+
+if output
+  File.open output, 'w' do |file|
+    tally.each do |word, count|
+      file << "#{word}#{delimiter}#{count}\n"
+    end
+  end
+else
+  tally.each do |word, count|
+    puts "#{word}#{delimiter}#{count}"
+  end
+end
